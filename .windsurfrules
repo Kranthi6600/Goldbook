@@ -1,0 +1,92 @@
+# PROJECT: Gold Loan SaaS for Indian Pawnbrokers
+
+## STACK (do not deviate)
+- Next.js 15 App Router, TypeScript strict mode
+- Tailwind CSS + shadcn/ui
+- Supabase (Postgres + Auth + Storage) via @supabase/supabase-js v2 and @supabase/ssr
+- TanStack Query v5 for server state
+- React Hook Form + Zod for forms
+- Vercel hosting
+- No custom backend server. Supabase is the backend.
+
+## HARD RULES (violating these breaks the product)
+1. Every table has a `shop_id` column. Every query filters by `shop_id`. No exceptions.
+2. Row Level Security (RLS) is enabled on EVERY table. Never disable it.
+3. Money is stored as Postgres `numeric`. Never `float`, never `real`.
+4. Due dates are Postgres `date`. Event timestamps are `timestamptz`.
+5. `SUPABASE_SERVICE_ROLE_KEY` is server-only. Never prefix with `NEXT_PUBLIC_`. Never import in client components.
+6. `NEXT_PUBLIC_SUPABASE_ANON_KEY` is the only key allowed in client code.
+7. Interest rate is FROZEN on the loan row at creation. Never recalculate rate later.
+8. Phone numbers stored as `+91XXXXXXXXXX` (strip spaces, no dashes).
+9. WhatsApp uses `wa.me` click-to-chat links. No WhatsApp Business API in MVP.
+10. Borrower NEVER logs in. Borrower access is via magic-link token at `/p/[token]`.
+
+## FILE STRUCTURE (follow exactly)
+app/
+(marketing)/page.tsx, pricing/page.tsx, demo/page.tsx
+(auth)/login/page.tsx, auth/callback/route.ts
+(onboarding)/onboarding/page.tsx
+(app)/app/layout.tsx, page.tsx, loans/, customers/, settings/, reports/
+(admin)/admin/layout.tsx, page.tsx
+p/[token]/page.tsx
+lib/
+supabase/client.ts (browser client, anon key)
+supabase/server.ts (server client, cookies)
+supabase/admin.ts (service role, server-only)
+queries/ (all data fetching)
+actions/ (all server actions)
+utils/
+components/
+ui/ (shadcn)
+app/ (feature components)
+types/
+database.ts (generated from Supabase)
+
+## CODE CONVENTIONS
+- Server Components by default. Client Components only when needed (`'use client'` at top).
+- Server Actions for mutations. No API routes unless webhooks.
+- All DB access via `lib/queries/*` or `lib/actions/*`. Never inline Supabase calls in components.
+- Zod schemas in `lib/schemas/*`. Shared between client and server.
+- Every form has loading, error, and success states.
+- Every list has empty, loading, and error states.
+- Money formatting: `new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR', maximumFractionDigits: 0 })`.
+- Dates: `date-fns` with `en-IN` locale.
+
+## DATABASE SCHEMA (source of truth — do not invent fields)
+Tables: shops, shop_staff, customers, slabs, loans, payments, reminders,
+passbook_tokens, audit_log, subscriptions, leads.
+
+Key columns:
+- shops: id, owner_id, name, phone, upi_id, logo_url, interest_mode, plan, trial_ends_at
+- customers: id, shop_id, name, phone, address, id_type, id_number, notes
+- slabs: id, shop_id, min_amount, max_amount, rate_monthly
+- loans: id, shop_id, customer_id, loan_number, gold_weight_g, gold_purity,
+  loan_amount, rate_monthly, interest_mode, start_date, due_date, status
+- payments: id, loan_id, shop_id, amount, method, reference, paid_at
+- reminders: id, loan_id, shop_id, kind, channel, sent_at, message_body
+- passbook_tokens: token, customer_id, shop_id, expires_at, revoked
+- audit_log: id, shop_id, actor_id, entity, entity_id, action, before, after
+
+SQL functions available: calc_interest, loan_summary, get_slab_rate, is_shop_member.
+
+## WHAT NOT TO DO
+- Do NOT add features not requested in the current prompt.
+- Do NOT create new database tables without being asked.
+- Do NOT install packages without stating which and why.
+- Do NOT write inline SQL in components.
+- Do NOT use `any` type. If unsure, use `unknown` and narrow.
+- Do NOT skip error handling.
+- Do NOT create placeholder/TODO code and call it done.
+- Do NOT modify files outside the scope of the current prompt.
+
+## RESPONSE FORMAT
+After every task, output:
+1. Files created/modified (full paths)
+2. Packages installed (with versions)
+3. Env vars required
+4. Exact command to test/verify
+5. What I should check manually
+6. Any assumptions I made
+7. What is NOT done yet
+
+Stop after each task. Wait for my confirmation before continuing.
