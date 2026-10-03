@@ -22,8 +22,7 @@ export default async function LoginPage({
         <CardHeader>
           <CardTitle>Sign in to your shop</CardTitle>
           <CardDescription>
-            Enter your email and we&apos;ll send you a magic link. No password
-            needed.
+            Enter your email and password to continue.
           </CardDescription>
         </CardHeader>
         <CardContent>

@@ -10,6 +10,7 @@ const TABS = [
   { label: "Interest Slabs", href: "/settings/slabs" },
   { label: "Staff", href: "/settings/staff" },
   { label: "WhatsApp Templates", href: "/settings/whatsapp" },
+  { label: "Security", href: "/settings/security" },
 ] as const
 
 export function SettingsTabs() {

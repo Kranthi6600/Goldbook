@@ -1,32 +1,90 @@
 "use server"
 
-import { headers } from "next/headers"
 import { redirect } from "next/navigation"
 
 import { createClient } from "@/lib/supabase/server"
-import { loginSchema } from "@/lib/schemas/auth"
+import {
+  changePasswordSchema,
+  credentialsSchema,
+} from "@/lib/schemas/auth"
 
 export type AuthActionResult = { error?: string }
 
-export async function sendMagicLink(
+export async function signInWithPassword(
   formData: FormData
 ): Promise<AuthActionResult> {
-  const parsed = loginSchema.safeParse({ email: formData.get("email") })
+  const parsed = credentialsSchema.safeParse({
+    email: formData.get("email"),
+    password: formData.get("password"),
+  })
   if (!parsed.success) {
-    return { error: "Enter a valid email address." }
+    return { error: "Enter a valid email and password (min 6 characters)." }
   }
 
-  const h = await headers()
-  const origin =
-    h.get("origin") ??
-    `${h.get("x-forwarded-proto") ?? "http"}://${h.get("host")}`
+  const supabase = await createClient()
+  const { error } = await supabase.auth.signInWithPassword({
+    email: parsed.data.email,
+    password: parsed.data.password,
+  })
+
+  if (error) {
+    return {
+      error:
+        error.message === "Invalid login credentials"
+          ? "Wrong email or password."
+          : error.message,
+    }
+  }
+
+  redirect("/")
+}
+
+export async function signUpWithPassword(
+  formData: FormData
+): Promise<AuthActionResult> {
+  const parsed = credentialsSchema.safeParse({
+    email: formData.get("email"),
+    password: formData.get("password"),
+  })
+  if (!parsed.success) {
+    return { error: "Enter a valid email and password (min 6 characters)." }
+  }
 
   const supabase = await createClient()
-  const { error } = await supabase.auth.signInWithOtp({
+  const { data, error } = await supabase.auth.signUp({
     email: parsed.data.email,
-    options: {
-      emailRedirectTo: `${origin}/auth/callback`,
-    },
+    password: parsed.data.password,
+  })
+
+  if (error) {
+    return {
+      error: /already/i.test(error.message)
+        ? "An account with this email already exists — sign in instead."
+        : error.message,
+    }
+  }
+
+  if (data.session) {
+    redirect("/")
+  }
+
+  return { error: "Account created — check your email to confirm, then sign in." }
+}
+
+export async function changePassword(
+  formData: FormData
+): Promise<AuthActionResult> {
+  const parsed = changePasswordSchema.safeParse({
+    new_password: formData.get("new_password"),
+    confirm_password: formData.get("confirm_password"),
+  })
+  if (!parsed.success) {
+    return { error: parsed.error.issues[0]?.message ?? "Invalid input." }
+  }
+
+  const supabase = await createClient()
+  const { error } = await supabase.auth.updateUser({
+    password: parsed.data.new_password,
   })
 
   if (error) {

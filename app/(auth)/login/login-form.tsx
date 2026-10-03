@@ -3,10 +3,10 @@
 import { useState, useTransition } from "react"
 import { useForm } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
-import { CircleAlertIcon, MailCheckIcon } from "lucide-react"
+import { CircleAlertIcon } from "lucide-react"
 
-import { loginSchema, type LoginInput } from "@/lib/schemas/auth"
-import { sendMagicLink } from "@/lib/actions/auth"
+import { credentialsSchema, type CredentialsInput } from "@/lib/schemas/auth"
+import { signInWithPassword, signUpWithPassword } from "@/lib/actions/auth"
 import {
   Form,
   FormControl,
@@ -19,42 +19,38 @@ import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 
+type Mode = "sign-in" | "sign-up"
+
 export function LoginForm({ serverError }: { serverError?: string }) {
-  const [sentTo, setSentTo] = useState<string | null>(null)
+  const [mode, setMode] = useState<Mode>("sign-in")
   const [error, setError] = useState<string | null>(serverError ?? null)
   const [pending, startTransition] = useTransition()
 
-  const form = useForm<LoginInput>({
-    resolver: zodResolver(loginSchema),
-    defaultValues: { email: "" },
+  const form = useForm<CredentialsInput>({
+    resolver: zodResolver(credentialsSchema),
+    defaultValues: { email: "", password: "" },
   })
 
-  function onSubmit(values: LoginInput) {
+  const isSignUp = mode === "sign-up"
+
+  function onSubmit(values: CredentialsInput) {
     setError(null)
     const formData = new FormData()
     formData.set("email", values.email)
+    formData.set("password", values.password)
 
     startTransition(async () => {
-      const result = await sendMagicLink(formData)
-      if (result.error) {
+      const action = isSignUp ? signUpWithPassword : signInWithPassword
+      const result = await action(formData)
+      if (result?.error) {
         setError(result.error)
-      } else {
-        setSentTo(values.email)
       }
     })
   }
 
-  if (sentTo) {
-    return (
-      <Alert>
-        <MailCheckIcon />
-        <AlertTitle>Check your email</AlertTitle>
-        <AlertDescription>
-          We sent a sign-in link to <strong>{sentTo}</strong>. Click the link in
-          the email to continue. You can close this tab.
-        </AlertDescription>
-      </Alert>
-    )
+  function toggleMode() {
+    setError(null)
+    setMode((m) => (m === "sign-in" ? "sign-up" : "sign-in"))
   }
 
   return (
@@ -66,7 +62,9 @@ export function LoginForm({ serverError }: { serverError?: string }) {
         {error && (
           <Alert variant="destructive">
             <CircleAlertIcon />
-            <AlertTitle>Sign-in failed</AlertTitle>
+            <AlertTitle>
+              {isSignUp ? "Sign-up failed" : "Sign-in failed"}
+            </AlertTitle>
             <AlertDescription>{error}</AlertDescription>
           </Alert>
         )}
@@ -88,9 +86,39 @@ export function LoginForm({ serverError }: { serverError?: string }) {
             </FormItem>
           )}
         />
+        <FormField
+          control={form.control}
+          name="password"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Password</FormLabel>
+              <FormControl>
+                <Input
+                  type="password"
+                  autoComplete={isSignUp ? "new-password" : "current-password"}
+                  {...field}
+                />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
         <Button type="submit" disabled={pending} className="w-full">
-          {pending ? "Sending link…" : "Send magic link"}
+          {pending
+            ? "Working…"
+            : isSignUp
+              ? "Create account"
+              : "Sign in"}
         </Button>
+        <button
+          type="button"
+          onClick={toggleMode}
+          className="text-center text-sm text-muted-foreground underline-offset-4 hover:text-foreground hover:underline"
+        >
+          {isSignUp
+            ? "Already have an account? Sign in"
+            : "New here? Create an account"}
+        </button>
       </form>
     </Form>
   )
