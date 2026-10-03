@@ -30,7 +30,7 @@ export function ActiveLoansTable({ loans }: { loans: LoanListItem[] }) {
         <TableRow>
           <TableHead>Loan #</TableHead>
           <TableHead>Customer</TableHead>
-          <TableHead className="text-right">Amount</TableHead>
+          <TableHead className="hidden text-right sm:table-cell">Amount</TableHead>
           <TableHead className="text-right">Interest accrued</TableHead>
           <TableHead className="text-right">Balance</TableHead>
           <TableHead>Status</TableHead>
@@ -50,7 +50,7 @@ export function ActiveLoansTable({ loans }: { loans: LoanListItem[] }) {
             >
               <TableCell className="font-medium">{loan.loan_number}</TableCell>
               <TableCell>{loan.customer_name}</TableCell>
-              <TableCell className="text-right">
+              <TableCell className="hidden text-right sm:table-cell">
                 {formatINR(loan.loan_amount)}
               </TableCell>
               <TableCell className="text-right font-medium text-amber-700 dark:text-amber-400">

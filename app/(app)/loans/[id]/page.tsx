@@ -240,8 +240,8 @@ export default async function LoanDetailPage({
                 <TableRow>
                   <TableHead>Date</TableHead>
                   <TableHead>Type</TableHead>
-                  <TableHead>Method</TableHead>
-                  <TableHead>Reference</TableHead>
+                  <TableHead className="hidden sm:table-cell">Method</TableHead>
+                  <TableHead className="hidden sm:table-cell">Reference</TableHead>
                   <TableHead className="text-right">Amount</TableHead>
                 </TableRow>
               </TableHeader>
@@ -252,8 +252,8 @@ export default async function LoanDetailPage({
                       {format(new Date(p.paid_at), "dd MMM yyyy, hh:mm a")}
                     </TableCell>
                     <TableCell className="capitalize">{p.kind}</TableCell>
-                    <TableCell className="capitalize">{p.method}</TableCell>
-                    <TableCell className="text-muted-foreground">
+                    <TableCell className="hidden capitalize sm:table-cell">{p.method}</TableCell>
+                    <TableCell className="hidden text-muted-foreground sm:table-cell">
                       {p.reference ?? "—"}
                     </TableCell>
                     <TableCell className="text-right">

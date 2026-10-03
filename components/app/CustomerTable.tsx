@@ -59,7 +59,7 @@ export function CustomerTable({
         <TableHeader>
           <TableRow>
             <TableHead>Name</TableHead>
-            <TableHead>Phone</TableHead>
+            <TableHead className="hidden sm:table-cell">Phone</TableHead>
             <TableHead className="text-right">Active Loans</TableHead>
             <TableHead className="text-right">Outstanding</TableHead>
             <TableHead className="w-10" />
@@ -73,7 +73,7 @@ export function CustomerTable({
               onClick={() => router.push(`/customers/${customer.id}`)}
             >
               <TableCell className="font-medium">{customer.name}</TableCell>
-              <TableCell>{customer.phone}</TableCell>
+              <TableCell className="hidden sm:table-cell">{customer.phone}</TableCell>
               <TableCell className="text-right">
                 {customer.activeLoanCount}
               </TableCell>

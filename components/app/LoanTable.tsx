@@ -72,10 +72,20 @@ export function LoanTable({ loans }: { loans: LoanListItem[] }) {
     })
   }, [loans, sortKey, sortDir])
 
-  function SortableHead({ k, label, right }: { k: SortKey; label: string; right?: boolean }) {
+  function SortableHead({
+    k,
+    label,
+    right,
+    className,
+  }: {
+    k: SortKey
+    label: string
+    right?: boolean
+    className?: string
+  }) {
     const active = sortKey === k
     return (
-      <TableHead className={right ? "text-right" : undefined}>
+      <TableHead className={cn(right && "text-right", className)}>
         <button
           type="button"
           onClick={() => toggleSort(k)}
@@ -99,9 +109,9 @@ export function LoanTable({ loans }: { loans: LoanListItem[] }) {
         <TableRow>
           <SortableHead k="loan_number" label="Loan #" />
           <SortableHead k="customer" label="Customer" />
-          <TableHead>Gold</TableHead>
-          <SortableHead k="loan_amount" label="Amount" right />
-          <SortableHead k="due_date" label="Due Date" />
+          <TableHead className="hidden md:table-cell">Gold</TableHead>
+          <SortableHead k="loan_amount" label="Amount" right className="hidden sm:table-cell" />
+          <SortableHead k="due_date" label="Due Date" className="hidden md:table-cell" />
           <TableHead>Status</TableHead>
           <SortableHead k="balance" label="Balance" right />
         </TableRow>
@@ -117,13 +127,13 @@ export function LoanTable({ loans }: { loans: LoanListItem[] }) {
             >
               <TableCell className="font-medium">{loan.loan_number}</TableCell>
               <TableCell>{loan.customer_name}</TableCell>
-              <TableCell className="whitespace-nowrap">
+              <TableCell className="hidden whitespace-nowrap md:table-cell">
                 {loan.gold_weight_g}g{loan.gold_purity ? ` ${loan.gold_purity}` : ""}
               </TableCell>
-              <TableCell className="text-right">
+              <TableCell className="hidden text-right sm:table-cell">
                 {formatINR(loan.loan_amount)}
               </TableCell>
-              <TableCell>
+              <TableCell className="hidden md:table-cell">
                 {format(new Date(loan.due_date), "dd MMM yyyy")}
               </TableCell>
               <TableCell>
