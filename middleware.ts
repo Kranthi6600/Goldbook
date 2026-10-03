@@ -12,6 +12,20 @@ export async function middleware(request: NextRequest) {
     return NextResponse.next({ request })
   }
 
+  // Magic-link code landing on a non-callback path (e.g. Supabase fell back
+  // to Site URL root) — forward it so sign-in still completes.
+  const code = request.nextUrl.searchParams.get("code")
+  if (
+    code &&
+    request.nextUrl.pathname !== "/auth/callback" &&
+    request.nextUrl.pathname !== "/p"
+  ) {
+    const url = request.nextUrl.clone()
+    url.pathname = "/auth/callback"
+    url.search = `?code=${code}`
+    return NextResponse.redirect(url)
+  }
+
   let supabaseResponse = NextResponse.next({ request })
 
   const supabase = createServerClient(supabaseUrl, supabaseAnonKey, {
