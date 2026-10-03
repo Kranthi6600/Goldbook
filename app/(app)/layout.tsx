@@ -16,7 +16,7 @@ export default async function AppLayout({
   } = await supabase.auth.getUser()
 
   if (!user) {
-    redirect("/login")
+    redirect("/landing")
   }
 
   const shop = await getCurrentShop()
