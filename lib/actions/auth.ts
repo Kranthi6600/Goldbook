@@ -3,6 +3,7 @@
 import { redirect } from "next/navigation"
 
 import { createClient } from "@/lib/supabase/server"
+import { createAdminClient } from "@/lib/supabase/admin"
 import {
   changePasswordSchema,
   credentialsSchema,
@@ -50,25 +51,34 @@ export async function signUpWithPassword(
     return { error: "Enter a valid email and password (min 6 characters)." }
   }
 
+  // Create via admin API — email_confirm:true means no confirmation email is
+  // ever sent, so sign-up can't hit Supabase's email rate limits.
+  const admin = createAdminClient()
+  const { error: createError } = await admin.auth.admin.createUser({
+    email: parsed.data.email,
+    password: parsed.data.password,
+    email_confirm: true,
+  })
+
+  if (createError) {
+    return {
+      error: /already|exists|registered/i.test(createError.message)
+        ? "An account with this email already exists — sign in instead."
+        : createError.message,
+    }
+  }
+
   const supabase = await createClient()
-  const { data, error } = await supabase.auth.signUp({
+  const { error: signInError } = await supabase.auth.signInWithPassword({
     email: parsed.data.email,
     password: parsed.data.password,
   })
 
-  if (error) {
-    return {
-      error: /already/i.test(error.message)
-        ? "An account with this email already exists — sign in instead."
-        : error.message,
-    }
+  if (signInError) {
+    return { error: "Account created — sign in with your email and password." }
   }
 
-  if (data.session) {
-    redirect("/")
-  }
-
-  return { error: "Account created — check your email to confirm, then sign in." }
+  redirect("/")
 }
 
 export async function changePassword(
