@@ -72,22 +72,22 @@ export function AdminShopsTable({ shops }: { shops: AdminShopRow[] }) {
 
   return (
     <div className="flex flex-col gap-3">
-      <div className="flex items-center gap-2">
-        <div className="relative">
+      <div className="flex flex-wrap items-center gap-2">
+        <div className="relative flex-1 min-w-[200px] sm:min-w-[224px]">
           <SearchIcon className="absolute left-2.5 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
           <Input
             type="search"
             placeholder="Search name or phone…"
             value={query}
             onChange={(e) => setQuery(e.target.value)}
-            className="h-8 w-56 pl-8 text-xs"
+            className="h-8 w-full pl-8 text-xs"
           />
         </div>
         <button
           type="button"
           onClick={() => setExpiringOnly((v) => !v)}
           className={cn(
-            "inline-flex items-center gap-1.5 rounded-full border px-3 py-1 text-xs font-medium transition-colors",
+            "inline-flex items-center gap-1.5 rounded-full border px-3 py-1 text-xs font-medium transition-colors whitespace-nowrap",
             expiringOnly
               ? "border-amber-400 bg-amber-100 text-amber-900 dark:bg-amber-400/15 dark:text-amber-200"
               : "border-input text-muted-foreground hover:bg-muted"
@@ -112,10 +112,10 @@ export function AdminShopsTable({ shops }: { shops: AdminShopRow[] }) {
           <TableRow>
             <TableHead>Shop</TableHead>
             <TableHead>Plan</TableHead>
-            <TableHead>Trial ends</TableHead>
-            <TableHead>Joined</TableHead>
-            <TableHead className="text-right">Loans</TableHead>
-            <TableHead>Last activity</TableHead>
+            <TableHead className="hidden sm:table-cell">Trial ends</TableHead>
+            <TableHead className="hidden md:table-cell">Joined</TableHead>
+            <TableHead className="text-right hidden sm:table-cell">Loans</TableHead>
+            <TableHead className="hidden lg:table-cell">Last activity</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
@@ -145,7 +145,7 @@ export function AdminShopsTable({ shops }: { shops: AdminShopRow[] }) {
                     {s.plan ? ` · ${s.plan.replace(/_/g, " ")}` : ""}
                   </Badge>
                 </TableCell>
-                <TableCell>
+                <TableCell className="hidden sm:table-cell">
                   <span
                     className={cn(
                       trial.warn &&
@@ -155,11 +155,11 @@ export function AdminShopsTable({ shops }: { shops: AdminShopRow[] }) {
                     {trial.text}
                   </span>
                 </TableCell>
-                <TableCell>
+                <TableCell className="hidden md:table-cell">
                   {format(new Date(s.created_at), "dd MMM yyyy")}
                 </TableCell>
-                <TableCell className="text-right">{s.loan_count}</TableCell>
-                <TableCell className="text-muted-foreground">
+                <TableCell className="text-right hidden sm:table-cell">{s.loan_count}</TableCell>
+                <TableCell className="text-muted-foreground hidden lg:table-cell">
                   {s.last_activity
                     ? format(new Date(s.last_activity), "dd MMM yyyy")
                     : "—"}
