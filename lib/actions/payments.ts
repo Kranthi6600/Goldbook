@@ -96,6 +96,22 @@ export async function recordPayment(
     }
   }
 
+  // Validate payment kind against actual amounts
+  const interestAccrued = summary ? Number(summary.interest_accrued) : 0
+  const principalAmount = summary ? Number(summary.loan_amount) : 0
+
+  if (kind === "interest" && amount > interestAccrued + 1) {
+    return {
+      error: `Amount exceeds interest accrued (₹${interestAccrued.toFixed(2)}). Use "principal" or "mixed" for larger payments.`,
+    }
+  }
+
+  if (kind === "principal" && amount > principalAmount + 1) {
+    return {
+      error: `Amount exceeds principal (₹${principalAmount.toFixed(2)}). Use "mixed" for payments including interest.`,
+    }
+  }
+
   const { data: payment, error: paymentError } = await supabase
     .from("payments")
     .insert({

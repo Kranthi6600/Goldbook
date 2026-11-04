@@ -33,6 +33,10 @@ export default async function DashboardPage() {
     (l) => l.status === "active" || l.status === "overdue"
   )
 
+  const closedLoans = loans.filter(
+    (l) => l.status === "closed"
+  );
+
   return (
     <div className="flex flex-col gap-6">
       <h1 className="text-xl font-semibold">Dashboard</h1>
@@ -95,6 +99,26 @@ export default async function DashboardPage() {
           </CardHeader>
           <CardContent>
             <ActiveLoansTable loans={openLoans} />
+          </CardContent>
+        </Card>
+      )}
+
+      {closedLoans.length > 0 && (
+        <Card size="sm">
+          <CardHeader>
+            <div className="flex items-center justify-between">
+              <CardTitle>Closed loans</CardTitle>
+              <Link
+                href="/loans"
+                className="inline-flex items-center gap-1 text-sm text-muted-foreground transition-colors hover:text-foreground"
+              >
+                View all
+                <ArrowRightIcon className="size-3.5" />
+              </Link>
+            </div>
+          </CardHeader>
+          <CardContent>
+            <ActiveLoansTable loans={closedLoans} />
           </CardContent>
         </Card>
       )}

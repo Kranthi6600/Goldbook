@@ -3,7 +3,7 @@ import {
   BellIcon,
   DownloadIcon,
   PlusIcon,
-  SearchIcon,
+  UserIcon,
 } from "lucide-react"
 
 import { Badge } from "@/components/ui/badge"
@@ -11,7 +11,7 @@ import { Button } from "@/components/ui/button"
 
 const ACTIONS = [
   { label: "New Loan", href: "/loans/new", icon: PlusIcon },
-  { label: "Search Customer", href: "/customers", icon: SearchIcon },
+  { label: "Customers", href: "/customers", icon: UserIcon },
   { label: "Send Reminders", href: "/reminders", icon: BellIcon },
   { label: "Export", href: "/reports", icon: DownloadIcon },
 ] as const

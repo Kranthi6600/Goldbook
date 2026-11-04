@@ -138,6 +138,7 @@ export default async function LoanDetailPage({
             loanId={loan.id}
             loanNumber={loan.loan_number}
             balance={balance}
+            principalAmount={loan.loan_amount}
             interestOutstanding={interestOutstanding}
             customerName={loan.customers?.name ?? ""}
             customerPhone={loan.customers?.phone ?? ""}
