@@ -35,6 +35,9 @@ yarn-error.log*
 .env
 !.env.local.example
 
+# demo video (too large for GitHub)
+public/demo.mp4
+
 # vercel
 .vercel
 

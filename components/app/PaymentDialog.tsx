@@ -1,6 +1,6 @@
 "use client"
 
-import { useMemo, useState, useTransition } from "react"
+import { useEffect, useMemo, useState, useTransition } from "react"
 import { useRouter } from "next/navigation"
 import { useForm } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
@@ -58,6 +58,7 @@ export function PaymentDialog({
   loanId,
   loanNumber,
   balance,
+  principalAmount,
   interestOutstanding,
   customerName,
   customerPhone,
@@ -68,6 +69,7 @@ export function PaymentDialog({
   loanId: string
   loanNumber: string
   balance: number
+  principalAmount: number
   /** Accrued interest not yet covered by interest-kind payments. */
   interestOutstanding: number
   customerName: string
@@ -83,7 +85,24 @@ export function PaymentDialog({
   const [error, setError] = useState<string | null>(null)
   const [pending, startTransition] = useTransition()
 
-  const schema = useMemo(() => createPaymentSchema(Math.ceil(balance)), [balance])
+  const schema = useMemo(() => {
+    const baseSchema = createPaymentSchema(Math.ceil(balance))
+    return baseSchema.refine(
+      (data) => {
+        if (data.kind === "interest" && data.amount > interestOutstanding + 1) {
+          return false
+        }
+        if (data.kind === "principal" && data.amount > principalAmount + 1) {
+          return false
+        }
+        return true
+      },
+      {
+        message: `Amount exceeds interest outstanding (₹${interestOutstanding.toFixed(2)}). Use "principal" or "mixed" for larger payments.`,
+        path: ["amount"],
+      }
+    )
+  }, [balance, interestOutstanding, principalAmount])
 
   const defaultPaidAt = () => format(new Date(), "yyyy-MM-dd'T'HH:mm")
 
@@ -103,6 +122,21 @@ export function PaymentDialog({
       notes: "",
     },
   })
+
+  // Auto-switch payment kind when amount exceeds what's valid
+  const amount = form.watch("amount")
+
+  useEffect(() => {
+    if (Number.isFinite(amount) && amount > 0) {
+      const currentKind = form.getValues("kind")
+      if (currentKind === "interest" && amount > interestOutstanding + 1) {
+        form.setValue("kind", "mixed")
+      }
+      if (currentKind === "principal" && amount > principalAmount + 1) {
+        form.setValue("kind", "mixed")
+      }
+    }
+  }, [amount, interestOutstanding, principalAmount, form])
 
   function onOpenChange(next: boolean) {
     setOpen(next)
