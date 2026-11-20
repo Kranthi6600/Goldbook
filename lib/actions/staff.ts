@@ -109,14 +109,22 @@ export async function resendInvite(
   const staffData = staff as {
     invited_email: string
     invite_token: string
-    shops: { name: string }
+    shops: { name: string } | { name: string }[]
+  }
+
+  const shopName = Array.isArray(staffData.shops) 
+    ? staffData.shops[0]?.name 
+    : staffData.shops?.name
+
+  if (!shopName) {
+    return { error: "Shop not found." }
   }
 
   // Send email again
   try {
     await sendStaffInviteEmail({
       to: staffData.invited_email,
-      shopName: staffData.shops.name,
+      shopName,
       inviteToken: staffData.invite_token,
     })
   } catch (emailError) {
