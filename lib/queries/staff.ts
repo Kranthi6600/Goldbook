@@ -4,6 +4,7 @@ export type StaffRow = {
   id: string
   user_id: string | null
   invited_email: string | null
+  invite_token: string | null
   role: string
   accepted_at: string | null
   created_at: string
@@ -20,7 +21,7 @@ export async function listStaff(shopId: string): Promise<StaffRow[]> {
 
   const { data, error } = await supabase
     .from("shop_staff")
-    .select("id, user_id, invited_email, role, accepted_at, created_at")
+    .select("id, user_id, invited_email, invite_token, role, accepted_at, created_at")
     .eq("shop_id", shopId)
     .order("created_at", { ascending: true })
 

@@ -4,35 +4,10 @@ import { revalidatePath } from "next/cache"
 import { randomUUID } from "node:crypto"
 
 import { createClient } from "@/lib/supabase/server"
+import { getCurrentShopContext } from "@/lib/supabase/server"
 import { LoanCreateSchema } from "@/lib/schemas/loan"
 
 const PASSBOOK_TOKEN_DAYS = 365
-
-async function getOwnedShop() {
-  const supabase = await createClient()
-  const {
-    data: { user },
-  } = await supabase.auth.getUser()
-
-  if (!user) {
-    return { error: "You must be signed in." as const }
-  }
-
-  const { data: shop, error } = await supabase
-    .from("shops")
-    .select("id, interest_mode")
-    .eq("owner_id", user.id)
-    .maybeSingle()
-
-  if (error) {
-    return { error: error.message }
-  }
-  if (!shop) {
-    return { error: "Shop not found. Complete onboarding first." }
-  }
-
-  return { supabase, shop: shop as { id: string; interest_mode: string } }
-}
 
 /** Slab rate lookup for the loan form's rate autofill. */
 export async function getSlabRateAction(
@@ -42,22 +17,23 @@ export async function getSlabRateAction(
     return {}
   }
 
-  const result = await getOwnedShop()
-  if ("error" in result) {
-    return { error: result.error }
+  const { shopId, shop, error } = await getCurrentShopContext()
+  if (!shopId || !shop) {
+    return { error }
   }
 
-  const { data, error } = await result.supabase
+  const supabase = await createClient()
+  const { data, error: slabError } = await supabase
     .from("slabs")
     .select("rate_monthly")
-    .eq("shop_id", result.shop.id)
+    .eq("shop_id", shopId)
     .lte("min_amount", amount)
     .gte("max_amount", amount)
     .limit(1)
     .maybeSingle()
 
-  if (error) {
-    return { error: error.message }
+  if (slabError) {
+    return { error: slabError.message }
   }
 
   return { rate: data ? Number((data as { rate_monthly: number }).rate_monthly) : undefined }
@@ -75,11 +51,12 @@ export async function createLoan(input: unknown): Promise<{
     return { error: parsed.error.issues[0]?.message ?? "Invalid input." }
   }
 
-  const result = await getOwnedShop()
-  if ("error" in result) {
-    return { error: result.error }
+  const { shopId, shop, error: shopError } = await getCurrentShopContext()
+  if (!shopId || !shop) {
+    return { error: shopError }
   }
-  const { supabase, shop } = result
+
+  const supabase = await createClient()
   const v = parsed.data
 
   // a) Resolve customer: existing id OR create a new customer first.
@@ -91,7 +68,7 @@ export async function createLoan(input: unknown): Promise<{
       .from("customers")
       .select("id")
       .eq("id", customerId)
-      .eq("shop_id", shop.id)
+      .eq("shop_id", shopId)
       .maybeSingle()
 
     if (custError) {
@@ -106,7 +83,7 @@ export async function createLoan(input: unknown): Promise<{
     const { data: customer, error: customerError } = await supabase
       .from("customers")
       .insert({
-        shop_id: shop.id,
+        shop_id: shopId,
         name: v.new_customer.name,
         phone: v.new_customer.phone,
       })
@@ -132,7 +109,7 @@ export async function createLoan(input: unknown): Promise<{
   // b) Rate comes from the shop's slab table — never from the client.
   const { data: slabRate, error: rateError } = await supabase.rpc(
     "get_slab_rate",
-    { p_shop_id: shop.id, p_loan_amount: v.loan_amount }
+    { p_shop_id: shopId, p_loan_amount: v.loan_amount }
   )
   if (rateError) {
     return { error: rateError.message }
@@ -144,7 +121,7 @@ export async function createLoan(input: unknown): Promise<{
   // c) Server-side loan number: GL-YYYY-NNNN per shop (migration 005).
   const { data: loanNumber, error: numberError } = await supabase.rpc(
     "get_next_loan_number",
-    { p_shop_id: shop.id }
+    { p_shop_id: shopId }
   )
   if (numberError || !loanNumber) {
     return {
@@ -156,7 +133,7 @@ export async function createLoan(input: unknown): Promise<{
   const { data: loan, error: loanError } = await supabase
     .from("loans")
     .insert({
-      shop_id: shop.id,
+      shop_id: shopId,
       customer_id: customerId,
       loan_number: loanNumber as string,
       gold_weight_g: v.gold_weight_g,
@@ -182,7 +159,7 @@ export async function createLoan(input: unknown): Promise<{
   const { data: existingToken } = await supabase
     .from("passbook_tokens")
     .select("token")
-    .eq("shop_id", shop.id)
+    .eq("shop_id", shopId)
     .eq("customer_id", customerId)
     .eq("revoked", false)
     .gt("expires_at", new Date().toISOString())
@@ -201,7 +178,7 @@ export async function createLoan(input: unknown): Promise<{
       .from("passbook_tokens")
       .insert({
         token,
-        shop_id: shop.id,
+        shop_id: shopId,
         customer_id: customerId,
         expires_at: expiresAt,
       })

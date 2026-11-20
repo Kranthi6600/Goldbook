@@ -8,9 +8,10 @@ import {
   CircleAlertIcon,
   Trash2Icon,
   UserPlusIcon,
+  MailIcon,
 } from "lucide-react"
 
-import { inviteStaff, removeStaff } from "@/lib/actions/staff"
+import { inviteStaff, removeStaff, resendInvite } from "@/lib/actions/staff"
 import type { StaffRow } from "@/lib/queries/staff"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { Badge } from "@/components/ui/badge"
@@ -47,7 +48,7 @@ export function StaffManager({
         setError(res.error)
         return
       }
-      toast.success(`Invited ${email.trim()}`)
+      toast.success(`Invitation sent to ${email.trim()}`)
       setEmail("")
       router.refresh()
     })
@@ -68,6 +69,18 @@ export function StaffManager({
       }
       toast.success(`Removed ${who}`)
       router.refresh()
+    })
+  }
+
+  function onResend(row: StaffRow) {
+    if (!row.invited_email) return
+    startTransition(async () => {
+      const res = await resendInvite(row.id)
+      if (res.error) {
+        toast.error(res.error)
+        return
+      }
+      toast.success(`Invitation resent to ${row.invited_email}`)
     })
   }
 
@@ -104,8 +117,7 @@ export function StaffManager({
           </Button>
         </div>
         <p className="text-xs text-muted-foreground">
-          MVP: the invite is stored in the database. The person gains access
-          once their account is linked to this invite.
+          Staff will receive an email invitation with a link to accept and join your shop.
         </p>
       </div>
 
@@ -122,7 +134,7 @@ export function StaffManager({
               <TableHead>Role</TableHead>
               <TableHead>Status</TableHead>
               <TableHead>Added</TableHead>
-              <TableHead className="w-10" />
+              <TableHead className="w-32" />
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -144,15 +156,28 @@ export function StaffManager({
                     {format(new Date(row.created_at), "dd MMM yyyy")}
                   </TableCell>
                   <TableCell>
-                    <Button
-                      variant="ghost"
-                      size="icon-sm"
-                      disabled={pending}
-                      onClick={() => onRemove(row)}
-                    >
-                      {removingId === row.id ? "…" : <Trash2Icon />}
-                      <span className="sr-only">Remove</span>
-                    </Button>
+                    <div className="flex items-center gap-2">
+                      {pending_ && row.invited_email && (
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          disabled={pending}
+                          onClick={() => onResend(row)}
+                        >
+                          <MailIcon className="size-4" />
+                          Resend
+                        </Button>
+                      )}
+                      <Button
+                        variant="ghost"
+                        size="icon-sm"
+                        disabled={pending}
+                        onClick={() => onRemove(row)}
+                      >
+                        {removingId === row.id ? "…" : <Trash2Icon />}
+                        <span className="sr-only">Remove</span>
+                      </Button>
+                    </div>
                   </TableCell>
                 </TableRow>
               )

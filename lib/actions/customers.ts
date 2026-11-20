@@ -4,34 +4,9 @@ import { revalidatePath } from "next/cache"
 import { z } from "zod"
 
 import { createClient } from "@/lib/supabase/server"
+import { getCurrentShopContext } from "@/lib/supabase/server"
 import { CustomerSchema } from "@/lib/schemas/customer"
 import { searchCustomers, type CustomerSearchResult } from "@/lib/queries/customers"
-
-async function getShopId(): Promise<{ shopId?: string; error?: string }> {
-  const supabase = await createClient()
-  const {
-    data: { user },
-  } = await supabase.auth.getUser()
-
-  if (!user) {
-    return { error: "You must be signed in." }
-  }
-
-  const { data: shop, error } = await supabase
-    .from("shops")
-    .select("id")
-    .eq("owner_id", user.id)
-    .maybeSingle()
-
-  if (error) {
-    return { error: error.message }
-  }
-  if (!shop) {
-    return { error: "Shop not found. Complete onboarding first." }
-  }
-
-  return { shopId: (shop as { id: string }).id }
-}
 
 const CUSTOMER_SELECT_ERROR =
   "A customer with this phone number already exists."
@@ -44,7 +19,7 @@ export async function createCustomer(
     return { error: parsed.error.issues[0]?.message ?? "Invalid input." }
   }
 
-  const { shopId, error: shopError } = await getShopId()
+  const { shopId, error: shopError } = await getCurrentShopContext()
   if (!shopId) {
     return { error: shopError }
   }
@@ -90,7 +65,7 @@ export async function updateCustomer(
     return { error: parsed.error.issues[0]?.message ?? "Invalid input." }
   }
 
-  const { error: shopError } = await getShopId()
+  const { error: shopError } = await getCurrentShopContext()
   if (shopError) {
     return { error: shopError }
   }
@@ -131,7 +106,7 @@ export async function searchCustomersAction(query: string): Promise<{
   results: CustomerSearchResult[]
   error?: string
 }> {
-  const { shopId, error } = await getShopId()
+  const { shopId, error } = await getCurrentShopContext()
   if (!shopId) {
     return { results: [], error }
   }
@@ -146,7 +121,7 @@ export async function deleteCustomer(
     return { error: "Invalid customer id." }
   }
 
-  const { error: shopError } = await getShopId()
+  const { error: shopError } = await getCurrentShopContext()
   if (shopError) {
     return { error: shopError }
   }
