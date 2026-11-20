@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache"
 import { z } from "zod"
 
 import { createClient } from "@/lib/supabase/server"
+import { getCurrentShopContext } from "@/lib/supabase/server"
 
 const VALID_KINDS = new Set(["7d", "3d", "1d", "overdue"])
 
@@ -17,20 +18,12 @@ async function getShopAndUser() {
     return { error: "You must be signed in." as const }
   }
 
-  const { data: shop, error } = await supabase
-    .from("shops")
-    .select("id")
-    .eq("owner_id", user.id)
-    .maybeSingle()
-
-  if (error) {
-    return { error: error.message }
-  }
-  if (!shop) {
-    return { error: "Shop not found. Complete onboarding first." }
+  const { shopId, error } = await getCurrentShopContext()
+  if (!shopId) {
+    return { error }
   }
 
-  return { supabase, shopId: (shop as { id: string }).id, userId: user.id }
+  return { supabase, shopId, userId: user.id }
 }
 
 export async function logReminder(
@@ -45,17 +38,18 @@ export async function logReminder(
     return { error: "Invalid reminder kind." }
   }
 
-  const result = await getShopAndUser()
-  if ("error" in result) {
-    return { error: result.error }
+  const { shopId, userId, error: shopError } = await getShopAndUser()
+  if (!shopId || !userId) {
+    return { error: shopError }
   }
 
-  const { error } = await result.supabase.from("reminders").insert({
+  const supabase = await createClient()
+  const { error } = await supabase.from("reminders").insert({
     loan_id: loanId,
-    shop_id: result.shopId,
+    shop_id: shopId,
     kind,
     channel: "whatsapp",
-    sent_by: result.userId,
+    sent_by: userId,
     message_body: messageBody || null,
   })
 
@@ -81,18 +75,19 @@ export async function markAllReminders(
     return { error: "Invalid reminder kind." }
   }
 
-  const result = await getShopAndUser()
-  if ("error" in result) {
-    return { error: result.error }
+  const { shopId, userId, error: shopError } = await getShopAndUser()
+  if (!shopId || !userId) {
+    return { error: shopError }
   }
 
-  const { error } = await result.supabase.from("reminders").insert(
+  const supabase = await createClient()
+  const { error } = await supabase.from("reminders").insert(
     ids.data.map((loanId) => ({
       loan_id: loanId,
-      shop_id: result.shopId,
+      shop_id: shopId,
       kind,
       channel: "whatsapp",
-      sent_by: result.userId,
+      sent_by: userId,
     }))
   )
 

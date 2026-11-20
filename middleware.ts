@@ -47,6 +47,11 @@ export async function middleware(request: NextRequest) {
     return NextResponse.redirect(url)
   }
 
+  // /invite/* is public for accepting staff invitations
+  if (request.nextUrl.pathname.startsWith("/invite")) {
+    return supabaseResponse
+  }
+
   return supabaseResponse
 }
 

@@ -1,6 +1,7 @@
 "use client"
 
-import { MenuIcon, StoreIcon } from "lucide-react"
+import Link from "next/link"
+import { MenuIcon, SettingsIcon, StoreIcon } from "lucide-react"
 
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
@@ -33,7 +34,15 @@ export function AppNav({
           )}
         </div>
 
-        <div className="hidden md:block">
+        <div className="hidden md:flex items-center gap-2">
+          {!isStaff && (
+            <Link href="/settings">
+              <Button variant="ghost" size="icon">
+                <SettingsIcon />
+                <span className="sr-only">Settings</span>
+              </Button>
+            </Link>
+          )}
           <LogoutButton />
         </div>
 
@@ -47,7 +56,15 @@ export function AppNav({
               <SheetHeader>
                 <SheetTitle>{shopName}</SheetTitle>
               </SheetHeader>
-              <div className="px-4">
+              <div className="px-4 flex flex-col gap-2">
+                {!isStaff && (
+                  <Link href="/settings">
+                    <Button variant="ghost" className="w-full justify-start">
+                      <SettingsIcon className="mr-2" />
+                      Settings
+                    </Button>
+                  </Link>
+                )}
                 <LogoutButton />
               </div>
             </SheetContent>
